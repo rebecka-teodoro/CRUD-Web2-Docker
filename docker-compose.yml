@@ -1,0 +1,47 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  # Serviço da aplicação PHP (servidor web)
+  app:
+    build:
+      context: . # O contexto da build é o diretório atual (onde está o Dockerfile)
+      dockerfile: Dockerfile # Usa o Dockerfile no diretório atual
+    ports:
+      - "80:80" # Mapeia a porta 80 do host para a porta 80 do container
+    volumes:
+      # Monta o diretório 'app' local para o diretório de trabalho do container
+      # Isso permite que você edite o código localmente e veja as mudanças no container
+      - ./app:/var/www/html
+    depends_on:
+      - db # Garante que o serviço 'db' seja iniciado antes do 'app'
+    environment:
+      # Variáveis de ambiente para a conexão com o banco de dados
+      # Usadas pela aplicação PHP para se conectar ao MySQL
+      MYSQL_HOST: db
+      MYSQL_DATABASE: crud_db
+      MYSQL_USER: crud_user
+      MYSQL_PASSWORD: crud_password
+
+  # Serviço do banco de dados MySQL
+  db:
+    image: mysql:8.0 # Usa uma imagem oficial do MySQL 8.0
+    environment:
+      # Variáveis de ambiente para configurar o MySQL
+      MYSQL_ROOT_PASSWORD: root_password # Senha do usuário root do MySQL
+      MYSQL_DATABASE: crud_db # Nome do banco de dados a ser criado
+      MYSQL_USER: crud_user # Usuário para a aplicação
+      MYSQL_PASSWORD: crud_password # Senha do usuário para a aplicação
+    volumes:
+      # Persiste os dados do banco de dados para evitar perdas ao reiniciar o container
+      - db_data:/var/lib/mysql
+      # Copia o script SQL inicial para o diretório de inicialização do MySQL
+      # Isso fará com que o banco de dados seja populado na primeira inicialização
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306" # Opcional: Mapeia a porta do MySQL para acesso externo (ex: MySQL Workbench)
+
+# Volumes para persistência de dados
+volumes:
+  db_data: # Volume nomeado para os dados do MySQL
